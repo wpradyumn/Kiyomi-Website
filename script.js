@@ -3,10 +3,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // Mobile Menu Toggle
   const hamburger = document.querySelector(".hamburger")
   const navLinks = document.querySelector(".nav-links")
+  const body = document.body
 
-  hamburger.addEventListener("click", () => {
-    hamburger.classList.toggle("active")
-    navLinks.classList.toggle("active")
+  if (hamburger && navLinks) {
+    hamburger.addEventListener("click", () => {
+      hamburger.classList.toggle("active")
+      navLinks.classList.toggle("active")
+      // Prevent background scrolling when menu is open
+      body.style.overflow = navLinks.classList.contains("active") ? "hidden" : ""
   })
 
   // Close mobile menu when clicking on a nav link
@@ -20,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Hero Section Scroll Effect
   const hero = document.querySelector(".hero")
   if (hero) {
+    const heroContent = hero.querySelector(".hero-content")
     window.addEventListener("scroll", () => {
       const scrollPosition = window.scrollY
       const heroHeight = hero.offsetHeight
@@ -40,6 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (testimonialsSlider && testimonials.length > 0) {
     let currentIndex = 0
+    let autoSlideInterval
+    let touchStartX = 0
+    let touchEndX = 0
 
     // Create dots
     testimonials.forEach((_, index) => {
@@ -62,10 +70,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Go to specific slide
-    function goToSlide(index) {
+      function goToSlide(index) {
       currentIndex = index
-      testimonialsSlider.scrollLeft = testimonials[index].offsetLeft
+      const scrollPosition = testimonials[index].offsetLeft
+      testimonialsSlider.scrollTo({
+        left: scrollPosition,
+        behavior: "smooth",
+      })
       updateDots()
+      resetAutoSlide()
     }
 
     // Next slide
@@ -79,6 +92,37 @@ document.addEventListener("DOMContentLoaded", () => {
       currentIndex = (currentIndex - 1 + testimonials.length) % testimonials.length
       goToSlide(currentIndex)
     }
+    // Reset auto slide timer
+    function resetAutoSlide() {
+      clearInterval(autoSlideInterval)
+      autoSlideInterval = setInterval(nextSlide, 5000)
+    }
+
+    // Touch events for mobile swiping
+    testimonialsSlider.addEventListener(
+      "touchstart",
+      (e) => {
+        touchStartX = e.changedTouches[0].screenX
+      },
+      { passive: true },
+    )
+      testimonialsSlider.addEventListener(
+      "touchend",
+      (e) => {
+        touchEndX = e.changedTouches[0].screenX
+        handleSwipe()
+      },
+      { passive: true },
+    )
+function handleSwipe() {
+      const swipeThreshold = 50
+      if (touchEndX < touchStartX - swipeThreshold) {
+        nextSlide() // Swipe left
+      } else if (touchEndX > touchStartX + swipeThreshold) {
+        prevSlide() // Swipe right
+      }
+    }
+
 
     // Event listeners
     if (nextBtn) nextBtn.addEventListener("click", nextSlide)
@@ -139,6 +183,43 @@ document.addEventListener("DOMContentLoaded", () => {
     section.style.transform = "translateY(30px)"
     section.style.transition = "opacity 0.6s ease, transform 0.6s ease"
   })
+// Check sections on initial load
+  checkSections()
+
+  // Add scroll event listener with throttling for better performance
+  let scrollTimeout
+  document.addEventListener("scroll", () => {
+    if (!scrollTimeout) {
+      scrollTimeout = setTimeout(() => {
+        checkSections()
+        scrollTimeout = null
+      }, 100)
+    }
+  })
+ // Fix for menu navigation on mobile
+  const menuNav = document.querySelector(".menu-nav")
+  if (menuNav) {
+    const menuLinks = menuNav.querySelectorAll("a")
+
+    menuLinks.forEach((link) => {
+      link.addEventListener("click", function (e) {
+        menuLinks.forEach((l) => l.classList.remove("active"))
+        this.classList.add("active")
+      })
+    })
+  }
+
+  // Fix for gallery images on mobile
+  const galleryItems = document.querySelectorAll(".gallery-item")
+  if (galleryItems.length > 0 && window.innerWidth <= 600) {
+    galleryItems.forEach((item) => {
+      const caption = item.querySelector(".gallery-caption")
+      if (caption) {
+        caption.style.transform = "translateY(0)"
+      }
+    })
+  }
+})
 
   // Add class to show sections
   document.addEventListener("scroll", checkSections)
